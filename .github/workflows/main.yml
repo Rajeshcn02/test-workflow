@@ -122,7 +122,7 @@ jobs:
     runs-on: Self-hosted_runner
     environment: 
       name: Deploy to prod
-    needs:  Deploytodev
+    needs:   DeploytoQA
     steps:
     - name: Download a Build Artifact
       uses: actions/download-artifact@v2.0.5
