@@ -1,0 +1,142 @@
+name: Sample application
+
+on:
+ push:
+  branches: [ Dev, main, Release ]
+ pull_request:
+   branches: [ Dev, main, Release ]
+
+env:
+  app_pool_name: 'SampleApp'
+  site_name: 'SampleApp'
+  contentpath: 'C:\SampleApp\Content\D_C\a\SampleApp\SampleApp\Sample\SampleApp\obj\Debug\Package\PackageTmp'
+  
+jobs:
+  Build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Nuget.exe
+        uses: NuGet/setup-nuget@v1.0.5
+  
+      - name: setup-msbuild
+        uses: microsoft/setup-msbuild@v1
+        
+      - name: Nuget restore
+        run: nuget restore ${{github.workspace}}\Sample\Sample.sln
+        
+      - name: Build Solution
+        run: |
+          msbuild ${{github.workspace}}/Sample/Sample.sln /p:TransformWebconfigEnabled=False /p:Configuration=Debug /p:DeployOnBuild=true /p:Platform='Any CPU' /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:PackageLocation="${{github.workspace}}\SampleSite"
+          
+      - name: details
+        run : |
+            ls
+            
+      - name: upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: SampleAppArtifact
+          path: ${{github.workspace}}\SampleSite
+       
+  Deploytodev:
+    name: 📦 Deploy to Dev
+    runs-on: Self-hosted_runner
+    environment: 
+        name: Deploy to Dev
+    if: github.ref == 'refs/heads/Dev'
+    needs: Build
+    steps:
+      
+    - uses: actions/checkout@v2
+      
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2.0.5
+      with:
+        name: SampleAppArtifact
+        path: ${{github.workspace}}\SampleSite
+
+    - name: Stop Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Stop-WebAppPool -Name ${{env.site_name}}; Stop-WebSite -Name ${{env.app_pool_name}}
+        
+    - name: Copy Files
+      run: |
+        xcopy ${{env.contentpath}} C:\inetpub\wwwroot\SampleApp /S /Y /E
+     
+    - name: Start Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Start-WebAppPool -Name ${{env.site_name}}; Start-WebSite -Name ${{env.app_pool_name}}
+        
+  
+  DeploytoSIT:
+    name: 🚀 Deploy to SIT
+    runs-on: Self-hosted_runner
+    environment: 
+      name: Deploy to SIT
+    needs:  Deploytodev
+    steps:
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2.0.5
+      with:
+        name: SampleAppArtifact
+        path: ${{github.workspace}}\SampleSite
+        
+    - name: Stop Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Stop-WebAppPool -Name ${{env.site_name}}; Stop-WebSite -Name ${{env.app_pool_name}}
+        
+    - name: Copy Files
+      run: |
+        xcopy ${{env.contentpath}} C:\inetpub\wwwroot\SampleApp /S /Y /E
+     
+    - name: Start Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Start-WebAppPool -Name ${{env.site_name}}; Start-WebSite -Name ${{env.app_pool_name}}
+          
+  
+  DeploytoQA:
+    name: 🚀 Deploy to QA
+    runs-on: Self-hosted_runner
+    environment: 
+      name: Deploy to QA
+    if: github.ref == 'refs/heads/Release '
+    needs:  Build
+    steps:
+       
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2.0.5
+      with:
+        name: SampleAppArtifact
+        path: ${{github.workspace}}\SampleSite
+        
+    - name: Stop Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Stop-WebAppPool -Name ${{env.site_name}}; Stop-WebSite -Name ${{env.app_pool_name}}
+        
+    - name: Copy Files
+      run: |
+        xcopy ${{env.contentpath}} C:\inetpub\wwwroot\SampleApp /S /Y /E
+     
+    - name: Start Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Start-WebAppPool -Name ${{env.site_name}}; Start-WebSite -Name ${{env.app_pool_name}}
+        
+  Deploytoprod:
+    name: 🚀 Deploy to prod
+    runs-on: Self-hosted_runner
+    environment: 
+      name: Deploy to prod
+    needs:  Deploytodev
+    steps:
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2.0.5
+      with:
+        name: SampleAppArtifact
+        path: ${{github.workspace}}\SampleSite
+        
+    - name: Stop Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Stop-WebAppPool -Name ${{env.site_name}}; Stop-WebSite -Name ${{env.app_pool_name}}
+        
+    - name: Copy Files
+      run: |
+        xcopy ${{env.contentpath}} C:\inetpub\wwwroot\SampleApp /S /Y /E
+     
+    - name: Start Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Start-WebAppPool -Name ${{env.site_name}}; Start-WebSite -Name ${{env.app_pool_name}}
+     
