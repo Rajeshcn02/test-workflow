@@ -91,7 +91,29 @@ jobs:
     - name: Start Site and App Pool
       run: powershell.exe Import-Module WebAdministration; Start-WebAppPool -Name ${{env.site_name}}; Start-WebSite -Name ${{env.app_pool_name}}
           
-  
+  DeploytoPT:
+    name: 🚀 Deploy to PT
+    runs-on: Self-hosted_runner
+    environment: 
+      name: Deploy to PT
+    needs:  DeploytoSIT
+    steps:
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2.0.5
+      with:
+        name: SampleAppArtifact
+        path: ${{github.workspace}}\SampleSite
+        
+    - name: Stop Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Stop-WebAppPool -Name ${{env.site_name}}; Stop-WebSite -Name ${{env.app_pool_name}}
+        
+    - name: Copy Files
+      run: |
+        xcopy ${{env.contentpath}} C:\inetpub\wwwroot\SampleApp /S /Y /E
+     
+    - name: Start Site and App Pool
+      run: powershell.exe Import-Module WebAdministration; Start-WebAppPool -Name ${{env.site_name}}; Start-WebSite -Name ${{env.app_pool_name}}
+ 
   DeploytoQA:
     name: 🚀 Deploy to QA
     runs-on: Self-hosted_runner
