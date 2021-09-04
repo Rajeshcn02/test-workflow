@@ -41,7 +41,7 @@ jobs:
           path: ${{github.workspace}}\SampleSite
        
   Deploytodev:
-    name: 📦 Deploy to Dev
+    name: 🚀 Deploy to Dev
     runs-on: Self-hosted_runner
     environment: 
         name: Deploy to Dev
